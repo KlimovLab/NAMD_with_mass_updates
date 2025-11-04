@@ -43,7 +43,7 @@ massUpdatesFile <massUpdatesFile>
 
 ## References
 
-[1] Phillips, J. C. et al. (2020) Scalable molecular dynamics on CPU and GPU architectures with NAMD. *J. Chem. Phys.* 153(4): 044130. 
-[2] Feenstra, K. A., Hess, B., & Berendsen, H. J. C. (1999) Improving efficiency of large time-scale molecular dynamics simulations of hydrogen-rich systems. *J. Comput. Chem.* 20(8): 749-895. 
+[1] Phillips, J. C. et al. (2020) Scalable molecular dynamics on CPU and GPU architectures with NAMD. *J. Chem. Phys.* 153(4): 044130.   
+[2] Feenstra, K. A., Hess, B., & Berendsen, H. J. C. (1999) Improving efficiency of large time-scale molecular dynamics simulations of hydrogen-rich systems. *J. Comput. Chem.* 20(8): 749-895.   
 [3] Jiménez, J. G. R., Fábián, B., & Hummer, G. (2024) Faster sampling in molecular dynamics simulation with TIP3P-F water. *J. Chem. Theory. Comput.* 20(24): 11068-11081.  
 
