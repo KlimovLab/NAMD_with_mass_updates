@@ -1,0 +1,136 @@
+diff -ruN NAMD_3.0.2_Source/src/Molecule.C NAMD_3.0.2_mass_updates/src/Molecule.C
+--- NAMD_3.0.2_Source/src/Molecule.C	2025-10-22 22:05:23
++++ NAMD_3.0.2_mass_updates/src/Molecule.C	2025-10-22 22:06:08
+@@ -9115,6 +9115,50 @@
+ }
+ // End of function build_fep_flags
+ 
++void Molecule::process_mass_updates(StringList *file) {
++  Real mass = 0;
++  int i, numChanges;
++  char err_msg[512];
++
++  if ( ! file ) {
++    NAMD_die("no massUpdatesFile specified");
++  }
++
++  FILE *f = fopen(file->data, "r");
++  if ( ! f ) {
++    NAMD_die("unable to open massUpdatesFile");
++  } else {
++    iout << iINFO << "READING MASS UPDATES FILE " << file->data << "\n" <<endi;
++  }
++
++  i = -1;
++  numChanges = 0;
++  while ( 1 ) {
++    char buffer[512];
++    int ret_code;
++    do {
++      ret_code = NAMD_read_line(f, buffer);
++    } while ( (ret_code==0) && (NAMD_blank_string(buffer)) );
++    if (ret_code!=0) break;
++
++    sscanf(buffer, "%f", &mass);
++
++    ++i;
++    if (mass > 0) {
++      ++numChanges;
++      atoms[i].mass = mass;
++    }
++  }
++  if (i+1 != numAtoms) {
++    NAMD_die("wrong number of atoms in massUpdatesFile");
++  }
++  iout << iINFO << "UPDATED " << numChanges << " MASSES\n" << endi;
++
++  if (file->next != NULL) {
++    NAMD_die("Multiple definitions of massUpdatesFile in configuration file");
++  }
++}
++
+ // XXX Passing in cwd is useless, since the only caller (NamdState) always
+ // sends NULL - note that several other routines have this same form,
+ // which probably dates back to much earlier NAMD
+diff -ruN NAMD_3.0.2_Source/src/Molecule.h NAMD_3.0.2_mass_updates/src/Molecule.h
+--- NAMD_3.0.2_Source/src/Molecule.h	2025-10-22 22:05:23
++++ NAMD_3.0.2_mass_updates/src/Molecule.h	2025-10-22 22:06:08
+@@ -931,6 +931,8 @@
+   void receive_Molecule(MIStream *);
+         //  receive the molecular structure
+         //  from the master on a client
++
++  void process_mass_updates(StringList *file);
+   
+   void build_constraint_params(StringList *, StringList *, StringList *,
+              PDB *, char *);
+diff -ruN NAMD_3.0.2_Source/src/NamdState.C NAMD_3.0.2_mass_updates/src/NamdState.C
+--- NAMD_3.0.2_Source/src/NamdState.C	2025-10-22 22:05:23
++++ NAMD_3.0.2_mass_updates/src/NamdState.C	2025-10-22 22:06:08
+@@ -313,6 +313,11 @@
+ 
+   fflush(stdout);
+ 
++  // run mass updates right after Molecule is built
++  if (simParameters->massUpdatesOn) {
++    molecule->process_mass_updates(configList->find("massUpdatesFile"));
++  }
++
+ #ifdef MEM_OPT_VERSION
+   //upon knowing the number of atoms, it's good time to estimate the number of
+   //input/output processors if their value is not set
+diff -ruN NAMD_3.0.2_Source/src/SimParameters.C NAMD_3.0.2_mass_updates/src/SimParameters.C
+--- NAMD_3.0.2_Source/src/SimParameters.C	2025-10-22 22:05:23
++++ NAMD_3.0.2_mass_updates/src/SimParameters.C	2025-10-22 22:06:08
+@@ -1284,6 +1284,13 @@
+    opts.optionalB("les", "lesReduceMass", "Reduce enhanced atom mass?",
+      &lesReduceMass, FALSE);
+ 
++   // massUpdates
++   opts.optionalB("main", "massUpdates",
++       "Is mass updates enabled?",
++       &massUpdatesOn, FALSE);
++   opts.optional("massUpdates", "massUpdatesFile", "PDB file with mass updates "
++       "default is the input PDB file", PARSE_STRING);
++
+    // REST2 (replica exchange solute tempering) parameters
+    opts.optionalB("main", "soluteScaling",
+        "Is replica exchange solute tempering enabled?",
+@@ -3989,6 +3996,11 @@
+    if ((pairInteractionOn && alchOn) || (pairInteractionOn && lesOn)) 
+      NAMD_die("Sorry, pair interactions may not be calculated when LES, FEP or TI is enabled.");
+ 
++#ifdef MEM_OPT_VERSION
++     if ( massUpdatesOn )
++       NAMD_die("mass updates are incompatible with memory optimized version.");
++#endif
++
+    // Drude model
+    if (drudeOn) {
+      if ( ! langevinOn ) {
+@@ -4003,6 +4015,12 @@
+        NAMD_die("Drude implementation is incompatible with alchemical "
+            "free energy calculation.");
+      }
++   }
++
++   // if Drude isn't on, disable Drude Hard Wall
++   if (!drudeOn && drudeHardWallOn)
++   {
++     drudeHardWallOn = FALSE;
+    }
+ 
+    //  Set up load balancing variables
+diff -ruN NAMD_3.0.2_Source/src/SimParameters.h NAMD_3.0.2_mass_updates/src/SimParameters.h
+--- NAMD_3.0.2_Source/src/SimParameters.h	2025-10-22 22:05:23
++++ NAMD_3.0.2_mass_updates/src/SimParameters.h	2025-10-22 22:06:08
+@@ -477,6 +477,9 @@
+ 	Bool lesReduceTemp;		//  Reduce enhanced atom temperature?
+ 	Bool lesReduceMass;		//  Reduce enhanced atom mass?
+ 
++  // massUpdates
++  Bool massUpdatesOn;
++
+   // REST2
+   Bool soluteScalingOn;
+   /**< REST2 (replica exchange solute tempering) on? */

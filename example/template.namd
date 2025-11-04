@@ -1,0 +1,75 @@
+
+# input system......
+structure	sys_solv.psf         
+coordinates     sys_solv.pdb
+
+#..force field........................
+paratypecharmm	on                       
+parameters      par_all36m_prot.prm
+parameters      par_all36_lipid.prm
+parameters      par_all36_na.prm
+parameters      par_all36_carb.prm
+parameters      par_all36_cgenff.prm
+parameters      toppar_water_ions.str
+exclude		scaled1-4                 
+1-4scaling	1.0                        
+dielectric      1.0                        
+
+switching	  on                   
+switchdist 	  8.0                  
+cutoff		  12.0             
+pairlistdist	  13.5                 
+margin		  0.0  
+stepspercycle	  20                  
+rigidBonds        all                 
+rigidTolerance    0.00001 
+rigidIterations   100
+
+# Ewald EL..........................
+PME             on                
+PMETolerance    0.000001           
+PMEGridSizeX    30 
+PMEGridSizeY    30
+PMEGridSizeZ    30
+
+#integrator ............
+timestep 1.0                              
+fullElectFrequency  4                     
+
+#output....................
+outputenergies  1000
+outputtiming    1000
+binaryoutput    yes
+outputname      output/sys_prod
+restartname     output/sysi_prod
+restartfreq     10000
+binaryrestart   yes
+DCDfile         output/sys_prod.dcd
+dcdfreq         1000
+
+# MD protocol
+seed            360838
+numsteps        1000000
+temperature     310
+
+# NVT
+langevin          on
+langevinDamping   5
+langevinTemp      310
+langevinHydrogen  off
+
+# NPT
+useGroupPressure      yes #  for rigid bonds...
+useFlexibleCell       no
+useConstantArea       no
+
+langevinPiston        on
+langevinPistonTarget  1.01325 
+langevinPistonPeriod  200.
+langevinPistonDecay   100.
+langevinPistonTemp    310
+
+wrapAll on
+
+massUpdates	yes
+massUpdatesFile LW.dat
